@@ -1,0 +1,7 @@
+make.exe --dry-run --keep-going --print-directory
+make.exe: Entering directory `/c/Users/janba/C-dev/SDL_template_C'
+gcc main.c -o out -Wall -g -Wextra -IC:\Users\janba\Dev\i686-w64-mingw32\include -LC:\Users\janba\Dev\i686-w64-mingw32\lib -lmingw32 -lSDL2main -lSDL2 
+./out
+ 
+make.exe: Leaving directory `/c/Users/janba/C-dev/SDL_template_C'
+ 
