@@ -5,12 +5,12 @@ int main(int argc, char **argv){
     (void) argc; (void) argv;
 
     Context ctx = {0};
-    init_sdl2(&ctx, "Raycasting demo", WIDTH, HEIGHT);
+    init_sdl2(&ctx, "2d Raycasting", WIDTH, HEIGHT);
 
     while (ctx.is_running){
         handle_events(&ctx);
-        draw(&ctx);
         update(&ctx);
+        draw(&ctx);
         SDL_Delay(1000/60);
     }
     
