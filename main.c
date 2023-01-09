@@ -1,16 +1,19 @@
 #include <stdio.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_timer.h>
+#include "rays.h"
 
 int main(int argc, char **argv){
+    (void) argc; (void) argv;
 
-    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0){
-        printf("Error while initialising: %s\n", SDL_GetError());
-        return 1;
+    Context ctx = {0};
+    init_sdl2(&ctx, "Raycasting demo", WIDTH, HEIGHT);
+
+    while (ctx.is_running){
+        handle_events(&ctx);
+        draw(&ctx);
+        update(&ctx);
+        SDL_Delay(1000/60);
     }
-
-    printf("Hello world\n");
     
-    SDL_Quit();
+    destroy_context(&ctx);
     return 0;
 }

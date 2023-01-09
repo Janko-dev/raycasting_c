@@ -1,24 +1,13 @@
-# Template for SDL2 for C
+# Ray casting in C
+This repo contains an example application for 2d ray casting written in the C language for both recreational and educational purposes. Ray casting is a technique where `k` rays are cast from a center of projection with each at a different angle. These rays are vectors defined by their polar coordinate representation, i.e., `{angle, length}`. To define the point where a ray has potentially hit a target, the [line-line segment intersection](https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection) algorithm is used. The length of a given ray is set to the shortest target hit. This gives the effect of flashing light with a flashlight onto corners of walls.  
 
-For the purpose of programming with the Simple DirectMedia Layer library, this repository provides a template for the SDL2 library to use on Windows.
-It's setup to build for 32bit binary executables.
+The application is linked with [`SDL2`](https://www.libsdl.org/) and build with `make`. For **Linux** users, building is very simple, given that `SDL2` is installed on the system. Refer [here](https://wiki.libsdl.org/SDL2/Installation) for more information. For **Windows** users, you need to adjust the `Makefile` provided in the repo with your own include (`-I`) path and lib (`-L`) path. 
 
-This template SDL project uses Make as build-tool, within which:
-- GCC is used for compilation. I use the native windows port of the GNU compiler collection through MinGW.
-- The -Wall -Wextra compiler flag is used to enable and show all warnings during build
-- The -g compiler flag is used to produce debugging information during build
-- When adding more *.c files, don't forget to add them in the IN param of the Makefile
-- The -l compiler flag is used to link libraries. A set of standard system directories is searched for the given library plus additional directories that are specified with the -L compiler flag.
-- The -I compiler flag is used to add the directory that contains header files for preprocessing.
-
-## Usage
-Specify -L and -I flags by providing the path to the respective SDL2 library folder and include folder
+## Quick start
+Assuming `SDL2` is installed, the following will build and run the app.
 ```
-> git clone https://github.com/Janko-dev/SDL_Template_C.git
-> cd SDL_Template_C
-> make
+$ git clone
+$ cd raycasting
+$ make
+$ ./rays
 ```
-
-## References
-- https://man7.org/linux/man-pages/man1/gcc.1.html
-- https://www.libsdl.org/
