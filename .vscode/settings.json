@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "sdl_timer.h": "c"
+        "sdl_timer.h": "c",
+        "texture.h": "c"
     }
 }

@@ -1,4 +1,5 @@
 #include "rays.h"
+#include "texture.h"
 
 void init_sdl2(Context* ctx, const char* title, size_t width, size_t height) {
     
@@ -25,11 +26,14 @@ void init_sdl2(Context* ctx, const char* title, size_t width, size_t height) {
         defer_exit(-1);
     }
 
-    ctx->current_pos = (Vec){WIDTH/2+80, HEIGHT/2+40};
+    ctx->current_pos = (Vec){WIDTH/2, HEIGHT/2};
     ctx->angle = 0.0f;
     ctx->radius = 20.0f;
     ctx->circle = fill_circle_texture(ctx->ren, ctx->radius, 0x9F2B68f2);
-    ctx->fov = 45.0f;
+    ctx->fov = FIELD_OF_VIEW;
+
+    ctx->ceiling = fill_gradient_texture(ctx->ren, WIDTH, HEIGHT, CEILING_COLOR, 0x000000FF);
+    ctx->floor   = fill_gradient_texture(ctx->ren, WIDTH, HEIGHT, FLOOR_COLOR, 0x000000FF);
 
     size_t i = 0;
     for (double degree = -ctx->fov/2; degree <= ctx->fov/2 && i < RAY_COUNT; degree+=ctx->fov/RAY_COUNT, i++){
@@ -72,28 +76,20 @@ void handle_events(Context* ctx){
                 } else {
                     switch (e.key.keysym.sym){
                         case SDLK_w: {
-                            // ctx->current_pos.x += SDL_cosf(ctx->angle);
-                            // ctx->current_pos.y += SDL_sinf(ctx->angle);
                             ctx->keys[RIGHT] = SDL_cosf(ctx->angle);
                             ctx->keys[DOWN]  = SDL_sinf(ctx->angle);
                         } break;
                         case SDLK_s: {
                             ctx->keys[RIGHT] = -SDL_cosf(ctx->angle);
                             ctx->keys[DOWN]  = -SDL_sinf(ctx->angle);
-                            // ctx->current_pos.x -= SDL_cosf(ctx->angle);
-                            // ctx->current_pos.y -= SDL_sinf(ctx->angle);
                         } break;
                         case SDLK_a: {
-                            ctx->keys[RIGHT] = -(SDL_sinf(ctx->angle)+1)/2;
-                            ctx->keys[DOWN]  =  (SDL_cosf(ctx->angle)+1)/2;
-                            // ctx->current_pos.x += SDL_cosf(ctx->angle);
-                            // ctx->current_pos.y -= SDL_sinf(ctx->angle);
+                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle - M_PI/2);
+                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle - M_PI/2);
                         } break;
                         case SDLK_d: {
-                            ctx->keys[RIGHT] =  (SDL_sinf(ctx->angle)+1)/2;
-                            ctx->keys[DOWN]  = -(SDL_cosf(ctx->angle)+1)/2;
-                            // ctx->current_pos.x -= SDL_cosf(ctx->angle);
-                            // ctx->current_pos.y += SDL_sinf(ctx->angle);
+                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle + M_PI/2);
+                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle + M_PI/2);
                         } break;
                         case SDLK_q: ctx->is_2d_view = !ctx->is_2d_view; break; 
                         default: break;
@@ -115,7 +111,6 @@ void handle_events(Context* ctx){
                     ctx->keys[LEFT]  = 0.0f;
                     ctx->keys[RIGHT] = 0.0f;
                 }
-                // printf("UP, DOWN, RIGHT, LEFT = (%g, %g, %g, %g)\n", ctx->keys[UP], ctx->keys[DOWN], ctx->keys[RIGHT], ctx->keys[LEFT]);
                 
             } break;
             case SDL_MOUSEMOTION: {
@@ -127,8 +122,8 @@ void handle_events(Context* ctx){
                     ctx->angle = SDL_atan2f(vy, vx);
                 } else {
                     float vx = target_x - WIDTH/2;
-                    ctx->angle = map(vx, -WIDTH/2, WIDTH/2, 0, 2*M_PI);
-                    
+                    ctx->angle = map(vx, -WIDTH/2, WIDTH/2, 0, M_PI);
+                    ctx->y_offset = target_y - HEIGHT/2;
                 }
             } break;
             default: break;
@@ -155,38 +150,6 @@ bool line_line_intersection(Vec* p, float x1, float y1,
     return false;
 }
 
-SDL_Texture* fill_circle_texture(SDL_Renderer* ren, float radius, uint32_t rrggbbaa) {
-    
-    int diameter = radius*2;
-    SDL_Texture* tex = SDL_CreateTexture(ren, 
-        SDL_PIXELFORMAT_RGBA8888, 
-        SDL_TEXTUREACCESS_TARGET,
-        diameter, diameter);
-
-    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderTarget(ren, tex);
-    SDL_RenderClear(ren);
-    for (int py = -radius; py < radius; ++py){
-        for (int px = -radius; px < radius; ++px){
-            uint8_t r = (rrggbbaa & 0xff000000) >> 24;
-            uint8_t g = (rrggbbaa & 0x00ff0000) >> 16;
-            uint8_t b = (rrggbbaa & 0x0000ff00) >> 8;
-            uint8_t a = (rrggbbaa & 0x000000ff) >> 0;
-            
-            if (px*px + py*py < radius*radius){
-                SDL_SetRenderDrawColor(ren, r, g, b, a);
-            } 
-            else {
-                SDL_SetRenderDrawColor(ren, 0, 0, 0, 0);
-            }
-            SDL_RenderDrawPointF(ren, px + radius, py + radius);
-        }   
-    }
-    SDL_SetRenderTarget(ren, NULL);
-    return tex;
-}
-
 void draw(Context* ctx){
 
     SDL_SetRenderDrawColor(ctx->ren, 0, 0, 0, 0);
@@ -206,7 +169,7 @@ void draw(Context* ctx){
         }
 
         // draw walls
-        SDL_SetRenderDrawColor(ctx->ren, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(ctx->ren, RED(WALL_COLOR), GREEN(WALL_COLOR), BLUE(WALL_COLOR), 255);
         for (size_t i = 0; i < LINE_COUNT; i++){
             SDL_RenderDrawLineF(ctx->ren, 
                 ctx->walls[i].p1.x, ctx->walls[i].p1.y, 
@@ -216,14 +179,23 @@ void draw(Context* ctx){
         // draw player
         SDL_RenderCopy(ctx->ren, ctx->circle, NULL, &(SDL_Rect){x1-ctx->radius, y1-ctx->radius, ctx->radius*2, ctx->radius*2});
     } else {
+
+        SDL_RenderCopyEx(ctx->ren, ctx->ceiling, NULL, &(SDL_Rect){0, -HEIGHT/2 - ctx->y_offset, WIDTH, HEIGHT}, 0, NULL, SDL_FLIP_VERTICAL);
+        SDL_RenderCopy(ctx->ren, ctx->floor, NULL, &(SDL_Rect){0, HEIGHT/2 - ctx->y_offset, WIDTH, HEIGHT});
         float bar_width = (float)WIDTH/RAY_COUNT;
         for (int i = 0; i < RAY_COUNT; ++i){
-            float bar_height = map(ctx->rays[i].len, 0, RAY_LENGTH, HEIGHT, 0);
+            // needs adjustment
+            float bar_height = map(ctx->rays[i].len, 40, RAY_LENGTH, HEIGHT, 0);
             uint8_t color = map(ctx->rays[i].len, 0, RAY_LENGTH, 255, 0);
-            SDL_FRect bar_lower = (SDL_FRect){.x=(float)i * bar_width, .y=HEIGHT/2-bar_height/2, .w=bar_width, .h=bar_height};
-
-            SDL_SetRenderDrawColor(ctx->ren, color, color, color, 255);
-            SDL_RenderFillRectF(ctx->ren, &bar_lower);
+            SDL_FRect bar = (SDL_FRect){
+                .x=(float)i * bar_width, 
+                .y=HEIGHT/2-bar_height/2 - ctx->y_offset, 
+                .w=bar_width,
+                .h=bar_height
+            };
+            SDL_SetRenderDrawColor(ctx->ren, RED(WALL_COLOR), GREEN(WALL_COLOR), BLUE(WALL_COLOR), color);
+            
+            SDL_RenderFillRectF(ctx->ren, &bar);
         }
     }
 
@@ -240,16 +212,15 @@ float map(float n, float start1, float stop1, float start2, float stop2) {
 
 void update(Context* ctx){
 
-    #define RAY_DIST (ctx->is_2d_view ? (RAY_LENGTH) : (RAY_LENGTH))
     for (size_t j = 0; j < RAY_COUNT; j++){
 
-        float closest_len = RAY_DIST;
+        float closest_len = RAY_LENGTH;
         for (size_t i = 0; i < LINE_COUNT; i++){
             Vec p = {0};
             float x1 = ctx->current_pos.x;
             float y1 = ctx->current_pos.y;
-            float x2 = ctx->current_pos.x + RAY_DIST * SDL_cosf(ctx->rays[j].angle + ctx->angle);
-            float y2 = ctx->current_pos.y + RAY_DIST * SDL_sinf(ctx->rays[j].angle + ctx->angle);
+            float x2 = ctx->current_pos.x + RAY_LENGTH * SDL_cosf(ctx->rays[j].angle + ctx->angle);
+            float y2 = ctx->current_pos.y + RAY_LENGTH * SDL_sinf(ctx->rays[j].angle + ctx->angle);
 
             float x3 = ctx->walls[i].p1.x;
             float y3 = ctx->walls[i].p1.y;
@@ -268,23 +239,26 @@ void update(Context* ctx){
     ctx->current_pos.x += ctx->keys[RIGHT] - ctx->keys[LEFT]; 
     ctx->current_pos.y += ctx->keys[DOWN] - ctx->keys[UP]; 
     
+    // collision detection
     // for (size_t i = 0; i < LINE_COUNT; i++){
-    //     // float d = 
-    //     //     dist(ctx->current_pos, ctx->walls[i].p1) + // dist(current, p1) +
-    //     //     dist(ctx->current_pos, ctx->walls[i].p2) - // dist(current, p2) -
-    //     //     dist(ctx->walls[i].p1, ctx->walls[i].p2);  // dist(p1, p2)
-    //     // if (d < ctx->radius)
-    //     // {
-    //     //     ctx->current_pos.x -= ctx->keys[RIGHT] - ctx->keys[LEFT]; 
-    //     //     ctx->current_pos.y -= ctx->keys[DOWN] - ctx->keys[UP];
-    //     //     // return;
-    //     // }
-
+    //     float d = 
+    //         dist(ctx->current_pos, ctx->walls[i].p1) + // dist(current, p1) +
+    //         dist(ctx->current_pos, ctx->walls[i].p2) - // dist(current, p2) -
+    //         dist(ctx->walls[i].p1, ctx->walls[i].p2);  // dist(p1, p2)
+    //     if (d < ctx->radius)
+    //     {
+    //         ctx->current_pos.x -= ctx->keys[RIGHT] - ctx->keys[LEFT]; 
+    //         ctx->current_pos.y -= ctx->keys[DOWN] - ctx->keys[UP];
+    //         // return;
+    //     }
     // }
+
 }
 
 void destroy_context(Context* ctx){
     SDL_DestroyTexture(ctx->circle);
+    SDL_DestroyTexture(ctx->floor);
+    SDL_DestroyTexture(ctx->ceiling);
     SDL_DestroyRenderer(ctx->ren);
     SDL_DestroyWindow(ctx->win);
     SDL_Quit();

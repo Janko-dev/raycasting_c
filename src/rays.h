@@ -7,11 +7,17 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
 
-#define RAY_COUNT (540)
+#define RAY_COUNT 540
 #define RAY_LENGTH 200
+#define FIELD_OF_VIEW 60.0f
+
 #define LINE_COUNT 80
 #define WIDTH 800
 #define HEIGHT 600
+
+#define FLOOR_COLOR   0x7393D3FF
+#define CEILING_COLOR 0x4B0082FF
+#define WALL_COLOR    0xA52A2AFF
 
 #define UP    0
 #define DOWN  1
@@ -39,27 +45,31 @@ typedef struct {
     bool is_running;
     bool is_2d_view;
 
+    // Player data
     Vec current_pos;
-    // Vec vel;
     double angle;
+    double y_offset;
     float radius;
     SDL_Texture* circle;
     float keys[4];
     float fov;
     Ray rays[RAY_COUNT];
 
+    // Environment data
     Line walls[LINE_COUNT];
+    SDL_Texture* floor;
+    SDL_Texture* ceiling;
+    
 } Context;
 
-// context functions
+// Context functions
 void init_sdl2(Context* ctx, const char* title, size_t width, size_t height);
 void handle_events(Context* ctx);
 void draw(Context* ctx);
 void update(Context* ctx);
 void destroy_context(Context* ctx);
 
-// raycasting functions
-SDL_Texture* fill_circle_texture(SDL_Renderer* ren, float radius, uint32_t rrggbbaa);
+// Raycasting functions
 bool line_line_intersection(Vec* p, float x1, float y1, 
                                     float x2, float y2, 
                                     float x3, float y3, 
