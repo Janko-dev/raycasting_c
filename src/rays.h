@@ -24,6 +24,8 @@
 #define LEFT  2
 #define RIGHT 3
 
+#define PI 3.14159265359f
+
 typedef struct {
     float x;
     float y;

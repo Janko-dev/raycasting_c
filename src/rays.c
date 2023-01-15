@@ -37,7 +37,7 @@ void init_sdl2(Context* ctx, const char* title, size_t width, size_t height) {
 
     size_t i = 0;
     for (double degree = -ctx->fov/2; degree <= ctx->fov/2 && i < RAY_COUNT; degree+=ctx->fov/RAY_COUNT, i++){
-        double rad = degree/360.0f * 2.0f*M_PI;
+        double rad = degree/360.0f * 2.0f*PI;
         ctx->rays[i].angle = rad;
         ctx->rays[i].len = RAY_LENGTH;
     }
@@ -84,12 +84,12 @@ void handle_events(Context* ctx){
                             ctx->keys[DOWN]  = -SDL_sinf(ctx->angle);
                         } break;
                         case SDLK_a: {
-                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle - M_PI/2);
-                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle - M_PI/2);
+                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle - PI/2);
+                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle - PI/2);
                         } break;
                         case SDLK_d: {
-                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle + M_PI/2);
-                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle + M_PI/2);
+                            ctx->keys[RIGHT] = SDL_cosf(ctx->angle + PI/2);
+                            ctx->keys[DOWN]  = SDL_sinf(ctx->angle + PI/2);
                         } break;
                         case SDLK_q: ctx->is_2d_view = !ctx->is_2d_view; break; 
                         default: break;
@@ -122,7 +122,7 @@ void handle_events(Context* ctx){
                     ctx->angle = SDL_atan2f(vy, vx);
                 } else {
                     float vx = target_x - WIDTH/2;
-                    ctx->angle = map(vx, -WIDTH/2, WIDTH/2, 0, M_PI);
+                    ctx->angle = map(vx, -WIDTH/2, WIDTH/2, 0, PI);
                     ctx->y_offset = target_y - HEIGHT/2;
                 }
             } break;
